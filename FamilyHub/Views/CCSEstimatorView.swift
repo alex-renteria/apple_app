@@ -61,7 +61,7 @@ struct CCSEstimatorView: View {
                     }
                 }
 
-                Section("Your estimate") {
+                Section {
                     LabeledContent("Subsidy rate") {
                         Text("\(estimate.subsidyPercent, specifier: "%.1f")%")
                             .font(.headline)
@@ -81,6 +81,8 @@ struct CCSEstimatorView: View {
                     LabeledContent("Your gap per week") {
                         Text(estimate.weeklyGap, format: .currency(code: "AUD").precision(.fractionLength(0)))
                     }
+                } header: {
+                    Text("Your estimate")
                 } footer: {
                     Text("Estimate only, using published \(CCSRates.financialYearLabel) rates and the 3-Day Guarantee from 5 Jan 2026. Includes the standard 5% withholding. Doesn't include the higher rate for a 2nd child under 6. Confirm your actual entitlement with Services Australia.")
                 }
