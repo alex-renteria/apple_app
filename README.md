@@ -1,4 +1,6 @@
-# Family Hub 🇦🇺
+# Pouch 🇦🇺
+
+*Everything for your joey, in one pouch.*
 
 An iOS app for Australian parents of preschool-aged kids (3–5). It pulls the
 admin of Australian family life into one place:
