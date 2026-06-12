@@ -10,6 +10,10 @@ struct CCSEstimatorView: View {
     @AppStorage("ccsCareType") private var careTypeRaw = CCSCareType.centreBased.rawValue
     @AppStorage("ccsHours") private var subsidisedHoursRaw = SubsidisedHours.threeDayGuarantee.rawValue
 
+    // The number pad has no return key, so we track focus ourselves to
+    // offer a "Done" button that dismisses it.
+    @FocusState private var moneyFieldFocused: Bool
+
     private var careType: CCSCareType {
         CCSCareType(rawValue: careTypeRaw) ?? .centreBased
     }
@@ -37,6 +41,7 @@ struct CCSEstimatorView: View {
                         TextField("Income", value: $familyIncome, format: .currency(code: "AUD").precision(.fractionLength(0)))
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
+                            .focused($moneyFieldFocused)
                     }
                     Picker("Subsidised hours", selection: $subsidisedHoursRaw) {
                         ForEach(SubsidisedHours.allCases) { hours in
@@ -58,6 +63,7 @@ struct CCSEstimatorView: View {
                         TextField("Fee", value: $dailyFee, format: .currency(code: "AUD").precision(.fractionLength(0)))
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
+                            .focused($moneyFieldFocused)
                     }
                 }
 
@@ -88,6 +94,13 @@ struct CCSEstimatorView: View {
                 }
             }
             .navigationTitle("CCS Estimator")
+            .scrollDismissesKeyboard(.immediately)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") { moneyFieldFocused = false }
+                }
+            }
         }
     }
 }
