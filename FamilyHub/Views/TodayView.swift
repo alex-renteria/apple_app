@@ -44,17 +44,22 @@ struct TodayView: View {
                     }
                 }
 
-                Section("Your kids") {
+                Section("Your kids · \(Weekday.today.name)") {
                     if kids.isEmpty {
                         Text("Add your kids in the Kids tab to see them here.")
                             .foregroundStyle(.secondary)
                     } else {
                         ForEach(kids) { child in
-                            HStack {
-                                Text(child.name)
-                                Spacer()
-                                Text("\(child.ageDescription) · \(child.careType.rawValue)")
-                                    .foregroundStyle(.secondary)
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack {
+                                    Text(child.name)
+                                    Spacer()
+                                    Text(child.ageDescription)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Text(child.todayPlanDescription)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.tint)
                             }
                         }
                     }
@@ -83,5 +88,5 @@ struct TodayView: View {
 
 #Preview {
     TodayView()
-        .modelContainer(for: [Child.self, Checklist.self], inMemory: true)
+        .modelContainer(for: [Child.self, DayPlan.self, Checklist.self], inMemory: true)
 }

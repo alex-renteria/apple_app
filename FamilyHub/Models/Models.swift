@@ -11,17 +11,45 @@ final class Child {
     var birthDate: Date
     // SwiftData stores simple types most reliably, so we keep the enum
     // as its raw String and expose a typed property below.
+    // Superseded by the per-day `schedule`, but kept so existing saved
+    // data still loads; treat it as the fallback when a day has no plan.
     var careTypeRaw: String
+    @Relationship(deleteRule: .cascade, inverse: \DayPlan.child)
+    var schedule: [DayPlan]
 
     init(name: String, birthDate: Date, careType: CareType) {
         self.name = name
         self.birthDate = birthDate
         self.careTypeRaw = careType.rawValue
+        self.schedule = []
     }
 
     var careType: CareType {
         get { CareType(rawValue: careTypeRaw) ?? .longDayCare }
         set { careTypeRaw = newValue.rawValue }
+    }
+
+    var sortedSchedule: [DayPlan] {
+        schedule.sorted { $0.weekdayRaw < $1.weekdayRaw }
+    }
+
+    func plan(for weekday: Weekday) -> DayPlan? {
+        schedule.first { $0.weekdayRaw == weekday.rawValue }
+    }
+
+    /// Kids created before the schedule feature (or with missing days)
+    /// get a full week of default "At Home" plans.
+    func ensureFullWeek() {
+        for weekday in Weekday.allCases where plan(for: weekday) == nil {
+            schedule.append(DayPlan(weekday: weekday))
+        }
+    }
+
+    /// e.g. "Kindy / Preschool · Dance class"
+    var todayPlanDescription: String {
+        guard let plan = plan(for: .today) else { return careType.rawValue }
+        if plan.activity.isEmpty { return plan.careType.rawValue }
+        return "\(plan.careType.rawValue) · \(plan.activity)"
     }
 
     /// e.g. "4 yrs 2 mo"
@@ -40,9 +68,52 @@ enum CareType: String, CaseIterable, Identifiable {
     case familyDayCare = "Family Day Care"
     case kindy = "Kindy / Preschool"
     case school = "School"
+    case grandparents = "Grandparents"
     case atHome = "At Home"
 
     var id: String { rawValue }
+}
+
+// MARK: - Weekly schedule
+
+enum Weekday: Int, CaseIterable, Identifiable {
+    case monday = 1, tuesday, wednesday, thursday, friday, saturday, sunday
+
+    var id: Int { rawValue }
+
+    var name: String {
+        ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][rawValue - 1]
+    }
+
+    static var today: Weekday {
+        // Calendar uses 1 = Sunday … 7 = Saturday; we use 1 = Monday.
+        let calendarWeekday = Calendar.current.component(.weekday, from: .now)
+        return Weekday(rawValue: calendarWeekday == 1 ? 7 : calendarWeekday - 1) ?? .monday
+    }
+}
+
+/// Where a child is (and what they do) on one day of the week.
+@Model
+final class DayPlan {
+    var weekdayRaw: Int
+    var careTypeRaw: String
+    var activity: String
+    var child: Child?
+
+    init(weekday: Weekday, careType: CareType = .atHome, activity: String = "") {
+        self.weekdayRaw = weekday.rawValue
+        self.careTypeRaw = careType.rawValue
+        self.activity = activity
+    }
+
+    var weekday: Weekday {
+        Weekday(rawValue: weekdayRaw) ?? .monday
+    }
+
+    var careType: CareType {
+        get { CareType(rawValue: careTypeRaw) ?? .atHome }
+        set { careTypeRaw = newValue.rawValue }
+    }
 }
 
 // MARK: - Checklists

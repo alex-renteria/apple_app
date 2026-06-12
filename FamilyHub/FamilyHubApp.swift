@@ -10,6 +10,6 @@ struct FamilyHubApp: App {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(for: [Child.self, Checklist.self])
+        .modelContainer(for: [Child.self, DayPlan.self, Checklist.self])
     }
 }
