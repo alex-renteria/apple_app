@@ -10,6 +10,10 @@ struct CCSEstimatorView: View {
     @AppStorage("ccsCareType") private var careTypeRaw = CCSCareType.centreBased.rawValue
     @AppStorage("ccsHours") private var subsidisedHoursRaw = SubsidisedHours.threeDayGuarantee.rawValue
 
+    // The number pad has no return key, so we track focus ourselves to
+    // offer a "Done" button that dismisses it.
+    @FocusState private var moneyFieldFocused: Bool
+
     private var careType: CCSCareType {
         CCSCareType(rawValue: careTypeRaw) ?? .centreBased
     }
@@ -37,6 +41,7 @@ struct CCSEstimatorView: View {
                         TextField("Income", value: $familyIncome, format: .currency(code: "AUD").precision(.fractionLength(0)))
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
+                            .focused($moneyFieldFocused)
                     }
                     Picker("Subsidised hours", selection: $subsidisedHoursRaw) {
                         ForEach(SubsidisedHours.allCases) { hours in
@@ -58,10 +63,11 @@ struct CCSEstimatorView: View {
                         TextField("Fee", value: $dailyFee, format: .currency(code: "AUD").precision(.fractionLength(0)))
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
+                            .focused($moneyFieldFocused)
                     }
                 }
 
-                Section("Your estimate") {
+                Section {
                     LabeledContent("Subsidy rate") {
                         Text("\(estimate.subsidyPercent, specifier: "%.1f")%")
                             .font(.headline)
@@ -81,11 +87,20 @@ struct CCSEstimatorView: View {
                     LabeledContent("Your gap per week") {
                         Text(estimate.weeklyGap, format: .currency(code: "AUD").precision(.fractionLength(0)))
                     }
+                } header: {
+                    Text("Your estimate")
                 } footer: {
                     Text("Estimate only, using published \(CCSRates.financialYearLabel) rates and the 3-Day Guarantee from 5 Jan 2026. Includes the standard 5% withholding. Doesn't include the higher rate for a 2nd child under 6. Confirm your actual entitlement with Services Australia.")
                 }
             }
             .navigationTitle("CCS Estimator")
+            .scrollDismissesKeyboard(.immediately)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") { moneyFieldFocused = false }
+                }
+            }
         }
     }
 }

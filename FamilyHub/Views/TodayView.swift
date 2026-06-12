@@ -9,6 +9,11 @@ struct TodayView: View {
     @AppStorage("homeState") private var homeStateRaw = AUState.nsw.rawValue
     @Query(sort: \Child.birthDate) private var kids: [Child]
     @Query(sort: \Checklist.createdAt) private var checklists: [Checklist]
+    @Query(sort: \FamilyEvent.date) private var events: [FamilyEvent]
+
+    private var upcomingEvents: [FamilyEvent] {
+        Array(events.filter(\.isUpcoming).prefix(3))
+    }
 
     private var homeState: AUState {
         AUState(rawValue: homeStateRaw) ?? .nsw
@@ -44,17 +49,43 @@ struct TodayView: View {
                     }
                 }
 
-                Section("Your kids") {
+                Section("Key dates") {
+                    ForEach(upcomingEvents) { event in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(event.title)
+                                if let child = event.child {
+                                    Text(child.name)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            Spacer()
+                            Text(event.daysAway == 0 ? "Today" : "in \(event.daysAway) days")
+                                .foregroundStyle(.tint)
+                        }
+                    }
+                    NavigationLink("All key dates") {
+                        KeyDatesView()
+                    }
+                }
+
+                Section("Your kids · \(Weekday.today.name)") {
                     if kids.isEmpty {
                         Text("Add your kids in the Kids tab to see them here.")
                             .foregroundStyle(.secondary)
                     } else {
                         ForEach(kids) { child in
-                            HStack {
-                                Text(child.name)
-                                Spacer()
-                                Text("\(child.ageDescription) · \(child.careType.rawValue)")
-                                    .foregroundStyle(.secondary)
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack {
+                                    Text(child.name)
+                                    Spacer()
+                                    Text(child.ageDescription)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Text(child.todayPlanDescription)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.tint)
                             }
                         }
                     }
@@ -83,5 +114,5 @@ struct TodayView: View {
 
 #Preview {
     TodayView()
-        .modelContainer(for: [Child.self, Checklist.self], inMemory: true)
+        .modelContainer(for: [Child.self, DayPlan.self, FamilyEvent.self, Checklist.self], inMemory: true)
 }
