@@ -16,12 +16,16 @@ final class Child {
     var careTypeRaw: String
     @Relationship(deleteRule: .cascade, inverse: \DayPlan.child)
     var schedule: [DayPlan]
+    // If a child is removed, their events stay but become "whole family".
+    @Relationship(deleteRule: .nullify, inverse: \FamilyEvent.child)
+    var events: [FamilyEvent]
 
     init(name: String, birthDate: Date, careType: CareType) {
         self.name = name
         self.birthDate = birthDate
         self.careTypeRaw = careType.rawValue
         self.schedule = []
+        self.events = []
     }
 
     var careType: CareType {
@@ -113,6 +117,44 @@ final class DayPlan {
     var careType: CareType {
         get { CareType(rawValue: careTypeRaw) ?? .atHome }
         set { careTypeRaw = newValue.rawValue }
+    }
+}
+
+// MARK: - Key dates
+
+/// A one-off dated event: school fete, photo day, excursion, pupil-free
+/// day, Book Week dress-up… Optionally tied to one child, with an
+/// optional reminder notification.
+@Model
+final class FamilyEvent {
+    var title: String
+    var date: Date
+    var notes: String
+    var reminderEnabled: Bool
+    // Stable ID for the scheduled notification so we can cancel/replace it.
+    var reminderID: String
+    var child: Child?
+
+    init(title: String, date: Date, notes: String = "",
+         reminderEnabled: Bool = false, child: Child? = nil) {
+        self.title = title
+        self.date = date
+        self.notes = notes
+        self.reminderEnabled = reminderEnabled
+        self.reminderID = UUID().uuidString
+        self.child = child
+    }
+
+    var isUpcoming: Bool {
+        date >= Calendar.current.startOfDay(for: .now)
+    }
+
+    var daysAway: Int {
+        Calendar.current.dateComponents(
+            [.day],
+            from: Calendar.current.startOfDay(for: .now),
+            to: Calendar.current.startOfDay(for: date)
+        ).day ?? 0
     }
 }
 

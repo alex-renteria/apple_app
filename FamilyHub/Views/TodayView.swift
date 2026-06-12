@@ -9,6 +9,11 @@ struct TodayView: View {
     @AppStorage("homeState") private var homeStateRaw = AUState.nsw.rawValue
     @Query(sort: \Child.birthDate) private var kids: [Child]
     @Query(sort: \Checklist.createdAt) private var checklists: [Checklist]
+    @Query(sort: \FamilyEvent.date) private var events: [FamilyEvent]
+
+    private var upcomingEvents: [FamilyEvent] {
+        Array(events.filter(\.isUpcoming).prefix(3))
+    }
 
     private var homeState: AUState {
         AUState(rawValue: homeStateRaw) ?? .nsw
@@ -41,6 +46,27 @@ struct TodayView: View {
                         }
                     } else {
                         Text("No more term dates this year 🎉")
+                    }
+                }
+
+                Section("Key dates") {
+                    ForEach(upcomingEvents) { event in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(event.title)
+                                if let child = event.child {
+                                    Text(child.name)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            Spacer()
+                            Text(event.daysAway == 0 ? "Today" : "in \(event.daysAway) days")
+                                .foregroundStyle(.tint)
+                        }
+                    }
+                    NavigationLink("All key dates") {
+                        KeyDatesView()
                     }
                 }
 
@@ -88,5 +114,5 @@ struct TodayView: View {
 
 #Preview {
     TodayView()
-        .modelContainer(for: [Child.self, DayPlan.self, Checklist.self], inMemory: true)
+        .modelContainer(for: [Child.self, DayPlan.self, FamilyEvent.self, Checklist.self], inMemory: true)
 }
